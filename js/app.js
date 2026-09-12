@@ -1,6 +1,8 @@
 // ==========================================================================
 // Motor de preferencias en lenguaje natural
-// Puerto a JavaScript de la funcion Oracle "func.py" (translate_preferences).
+// Originalmente un puerto de la funcion Oracle "func.py" (ya eliminado, su
+// logica vive aqui), ampliado despues con mas sinonimos, deteccion de
+// superlativos ("-isimo") y tolerancia a errores de tipeo.
 // Corre 100% en el navegador: no hay backend ni base de datos.
 // ==========================================================================
 
@@ -27,11 +29,13 @@ const BASE_WEIGHTS_DEFAULTS = {
 const WEIGHT_KEYWORDS = new Map([
     ["mucho", 0.35], ["prioritario", 0.35], ["esencial", 0.35], ["fundamental", 0.35],
     ["imprescindible", 0.40], ["obligatorio", 0.35], ["vital", 0.35], ["maxima", 0.35],
-    ["valoro_mucho", 0.40], ["necesito", 0.35],
+    ["valoro_mucho", 0.40], ["necesito", 0.35], ["indispensable", 0.40], ["adoro", 0.35],
     ["valoro", 0.20], ["importante", 0.20], ["deseo", 0.20], ["aprecio", 0.25],
     ["quiero", 0.30], ["prefiero", 0.25], ["conveniente", 0.20], ["muy", 0.20],
     ["cerca", 0.20], ["bueno", 0.10], ["debo", 0.10], ["proximo", 0.10],
-    ["asequible", 0.15], ["accesible", 0.15], ["útil", 0.10]
+    ["asequible", 0.15], ["accesible", 0.15], ["útil", 0.10],
+    ["encanta", 0.30], ["clave", 0.25], ["primordial", 0.30], ["critico", 0.30],
+    ["genial", 0.15], ["perfecto", 0.20], ["super", 0.20]
 ]);
 
 const NEUTRAL_KEYWORDS = new Map([
@@ -40,7 +44,9 @@ const NEUTRAL_KEYWORDS = new Map([
     ["poco", -0.10], ["sin", -0.15], ["irrelevante", -0.15], ["tolerable", -0.10],
     ["da_igual", -0.20], ["escaso", -0.15], ["mínimo", -0.10],
     ["no_quiero", -0.30], ["prohibido", -0.35], ["evitar", -0.30],
-    ["evito", -0.30], ["lejos", -0.40], ["odio", -0.40]
+    ["evito", -0.30], ["lejos", -0.40], ["odio", -0.40],
+    ["detesto", -0.40], ["fatal", -0.20], ["pesimo", -0.25],
+    ["no_soporto", -0.30], ["no_aguanto", -0.30], ["para_nada", -0.25], ["ni_loco", -0.35]
 ]);
 
 const CRITERIA_MAP = [
@@ -50,14 +56,14 @@ const CRITERIA_MAP = [
     [["centro_de_salud", "consultorio", "cita_medica", "vacuna", "chequeo", "enfermeria", "pediatria", "medico_de_cabecera", "control", "prevencion", "ambulatorio"], "Accesibilidad_Salud_Basica"],
     [["residencia", "centro_de_dia", "tercera_edad", "geriatria", "viejo", "anciano", "adulto_mayor", "abuelo", "abuela", "abuelos"], "Accesibilidad_Servicios_Sociales_Para_Mayores"],
     [["farmacia", "medicamento", "medicamentos", "receta", "farmaceutico"], "Accesibilidad_Farmacia"],
-    [["verde", "parque", "parques", "arboles", "aire", "naturaleza"], "Agradabilidad_Entorno"],
+    [["verde", "parque", "parques", "arboles", "aire", "naturaleza", "jardin", "jardines", "bosque"], "Agradabilidad_Entorno"],
     [["mercado", "mercadillo", "galeria", "alimentacion", "comercio", "tiendas"], "Accesibilidad_Mercado"],
     [["hipermercado"], "Accesibilidad_Hipermercado"],
     [["centro_comercial"], "Accesibilidad_Centro_Comercial"],
     [["comercio", "supermercado", "mercadona", "aldi", "carrefour", "lidl", "minorista"], "Accesibilidad_Comercio_Minorista"],
     [["infante", "guarderia", "escuela_infantil", "3_años", "2_años", "4_años", "5_años", "6_años", "desarrollo_temprano", "patio_infantil", "estimulacion", "cuidador"], "Accesibilidad_Educacion_Infantil"],
-    [["primaria", "colegio", "escuela", "7_años", "8_años", "9_años", "10_años", "11_años", "12_años", "aula", "tutor", "asignaturas_primaria", "recreo"], "Accesibilidad_Educacion_Primaria"],
-    [["secundaria", "instituto", "eso", "13_años", "14_años", "15_años", "16_años", "17_años", "18_años", "bachillerato", "examen", "orientador_academico", "optativas", "laboratorio", "TICS_educacion", "bullying", "FP", "formacion_profesional", "tutor_secundaria"], "Accesibilidad_Educacion_Secundaria"],
+    [["primaria", "colegio", "escuela", "cole", "7_años", "8_años", "9_años", "10_años", "11_años", "12_años", "aula", "tutor", "asignaturas_primaria", "recreo"], "Accesibilidad_Educacion_Primaria"],
+    [["secundaria", "instituto", "insti", "13_años", "14_años", "15_años", "16_años", "17_años", "18_años", "bachillerato", "examen", "orientador_academico", "optativas", "laboratorio", "TICS_educacion", "bullying", "FP", "formacion_profesional", "tutor_secundaria"], "Accesibilidad_Educacion_Secundaria"],
     [["universidad", "campus", "carrera", "grado", "master", "facultad", "beca_estudio", "biblioteca_universitaria", "investigacion", "tesis", "ERASMUS", "matricula", "creditos_ECTS"], "Accesibilidad_Universidad"],
     [["libreria", "museo", "teatro", "cine", "librerias", "museos", "teatros", "cines", "pelicula", "arte"], "Accesibilidad_Ocio_Cultura"],
     [["ocio", "restaurantes", "bares", "cine", "gimnasio", "gym", "vida social", "salir", "deporte"], "Ocio_Restauracion"]
@@ -79,6 +85,61 @@ function eliminarTildes(texto) {
 
 function limpiarNumero(text) {
     return parseInt(text.replaceAll('.', '').replaceAll(',', ''), 10);
+}
+
+// --- Tolerancia a errores de tipeo (ej. "ospital" en vez de "hospital", "muxo" en vez de "mucho") ---
+
+function levenshteinDistance(a, b) {
+    if (a === b) return 0;
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    let prev = new Array(n + 1);
+    let curr = new Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+    for (let i = 1; i <= m; i++) {
+        curr[0] = i;
+        for (let j = 1; j <= n; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+        }
+        [prev, curr] = [curr, prev];
+    }
+    return prev[n];
+}
+
+function maxAllowedTypoDistance(wordLength) {
+    if (wordLength < 4) return 0;
+    if (wordLength <= 7) return 1;
+    return 2;
+}
+
+// Busca `word` en `map` (Map<string, valor>): exacto primero, con fallback a la
+// palabra mas parecida por distancia de edicion si no hay match exacto.
+// Palabras cortas (<4 letras) no toleran errores para no generar falsos positivos.
+function fuzzyGet(map, word) {
+    const exact = map.get(word);
+    if (exact !== undefined) return exact;
+    const maxDist = maxAllowedTypoDistance(word.length);
+    if (maxDist === 0) return undefined;
+    let best;
+    let bestDist = maxDist + 1;
+    for (const key of map.keys()) {
+        if (Math.abs(key.length - word.length) > maxDist) continue;
+        const d = levenshteinDistance(word, key);
+        if (d <= maxDist && d < bestDist) {
+            bestDist = d;
+            best = map.get(key);
+        }
+    }
+    return best;
+}
+
+// Superlativos ("importantisimo", "carisimo") sin tener que listar cada palabra a mano.
+const SUPERLATIVE_BOOST = 0.30;
+function superlativeBoost(word) {
+    if (word.length >= 6 && (word.endsWith('isimo') || word.endsWith('isima'))) return SUPERLATIVE_BOOST;
+    return undefined;
 }
 
 function buildWordToCriteria() {
@@ -116,7 +177,8 @@ function extractRestrictions(cleanedText, wordToCriteria) {
                 const contextText = cleanedText.slice(windowStart, windowEnd);
                 let targetKey = null;
                 for (const word of contextText.split(/\s+/)) {
-                    if (wordToCriteria.has(word)) { targetKey = wordToCriteria.get(word); break; }
+                    const criteria = fuzzyGet(wordToCriteria, word);
+                    if (criteria !== undefined) { targetKey = criteria; break; }
                 }
                 if (targetKey) {
                     restrictions[targetKey] = { Tipo: type, Valor: parseInt(match[2], 10) };
@@ -158,6 +220,11 @@ function translatePreferences(preferenceText) {
     cleanedText = cleanedText.replaceAll('creditos ECTS', 'universidad');
     cleanedText = cleanedText.replaceAll('biblioteca universitaria', 'universidad');
     cleanedText = cleanedText.replaceAll('beca estudio', 'universidad');
+    cleanedText = cleanedText.replaceAll('no soporto', 'no_soporto');
+    cleanedText = cleanedText.replaceAll('no aguanto', 'no_aguanto');
+    cleanedText = cleanedText.replaceAll('para nada', 'para_nada');
+    cleanedText = cleanedText.replaceAll('ni loco', 'ni_loco');
+    cleanedText = cleanedText.replaceAll('ni loca', 'ni_loco');
 
     cleanedText = cleanedText.replace(/\b(0|1|2|3|4|5|6)\s*an?i?os?\b/g, 'infante');
     cleanedText = cleanedText.replace(/\b(patio infantil|guarderia)\b/g, 'infante');
@@ -205,15 +272,16 @@ function translatePreferences(preferenceText) {
 
     const wordToCriteria = buildWordToCriteria();
 
-    // Boost (palabras de intensidad: "mucho", "valoro", "cerca"...)
+    // Boost (palabras de intensidad: "mucho", "valoro", "cerca", superlativos "-isimo"...)
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
-        if (!WEIGHT_KEYWORDS.has(word)) continue;
-        const boost = WEIGHT_KEYWORDS.get(word);
+        let boost = fuzzyGet(WEIGHT_KEYWORDS, word);
+        if (boost === undefined) boost = superlativeBoost(word);
+        if (boost === undefined) continue;
         let targetFound = false;
         for (let j = i + 1; j < Math.min(words.length, i + 6); j++) {
-            if (wordToCriteria.has(words[j])) {
-                const criteria = wordToCriteria.get(words[j]);
+            const criteria = fuzzyGet(wordToCriteria, words[j]);
+            if (criteria !== undefined) {
                 if (criteria in dynamicWeights) dynamicWeights[criteria] += boost;
                 targetFound = true;
                 break;
@@ -221,8 +289,8 @@ function translatePreferences(preferenceText) {
         }
         if (!targetFound) {
             for (let j = Math.max(0, i - 3); j < i; j++) {
-                if (wordToCriteria.has(words[j])) {
-                    const criteria = wordToCriteria.get(words[j]);
+                const criteria = fuzzyGet(wordToCriteria, words[j]);
+                if (criteria !== undefined) {
                     if (criteria in dynamicWeights) dynamicWeights[criteria] += boost;
                     break;
                 }
@@ -233,12 +301,12 @@ function translatePreferences(preferenceText) {
     // Reduccion (palabras de indiferencia/negacion: "no me importa", "lejos"...)
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
-        if (!NEUTRAL_KEYWORDS.has(word)) continue;
-        const reduction = NEUTRAL_KEYWORDS.get(word);
+        const reduction = fuzzyGet(NEUTRAL_KEYWORDS, word);
+        if (reduction === undefined) continue;
         let targetFound = false;
         for (let j = i + 1; j < Math.min(words.length, i + 5); j++) {
-            if (wordToCriteria.has(words[j])) {
-                const criteria = wordToCriteria.get(words[j]);
+            const criteria = fuzzyGet(wordToCriteria, words[j]);
+            if (criteria !== undefined) {
                 if (criteria in dynamicWeights) dynamicWeights[criteria] += reduction;
                 targetFound = true;
                 break;
@@ -246,8 +314,8 @@ function translatePreferences(preferenceText) {
         }
         if (!targetFound) {
             for (let j = Math.max(0, i - 3); j < i; j++) {
-                if (wordToCriteria.has(words[j])) {
-                    const criteria = wordToCriteria.get(words[j]);
+                const criteria = fuzzyGet(wordToCriteria, words[j]);
+                if (criteria !== undefined) {
                     if (criteria in dynamicWeights) dynamicWeights[criteria] += reduction;
                     break;
                 }
