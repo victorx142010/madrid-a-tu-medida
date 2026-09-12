@@ -1,0 +1,365 @@
+/* Estilos del Mapa y Contenedor Principal */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.main-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- BARRA LATERAL IZQUIERDA (FILTROS) --- */
+.sidebar {
+    width: 320px;
+    min-width: 320px;
+    background-color: #f9f9f9;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    z-index: 1001;
+}
+
+/* --- TOP 10 --- */
+.sidebar-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+
+    width: 280px;
+    background-color: rgba(255, 255, 255, 0.98);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    display: none; /* Oculto inicialmente */
+    flex-direction: column;
+
+    max-height: calc(100% - 240px);
+    overflow-y: auto; /* Scroll si la lista es larga */
+
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    z-index: 1000;
+}
+
+.sidebar-right h4 {
+    margin: 0;
+    color: white;
+    background-color: #d1121d;
+    padding: 12px 15px;
+    font-size: 1em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-radius: 8px 8px 0 0;
+}
+
+.top10-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.top10-item {
+    background: white;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.top10-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.top10-item:hover {
+    background-color: #fff5f5;
+    border-left: 4px solid #d1121d;
+    padding-left: 11px;
+}
+
+.top10-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.top10-rank {
+    font-weight: bold;
+    color: #d1121d;
+    font-size: 0.9em;
+    background: #ffecec;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    text-align: center;
+    line-height: 22px;
+    display: inline-block;
+}
+
+.top10-score {
+    font-weight: bold;
+    color: #333;
+    font-size: 0.95em;
+}
+
+.top10-id {
+    display: block;
+    font-size: 0.85em;
+    color: #666;
+    margin-left: 5px;
+}
+
+/* Estilos Generales Sidebar */
+.sidebar-section { margin-bottom: 20px; }
+.sidebar h4 { margin-top: 0; color: #d1121d; margin-bottom: 10px; }
+
+/* --- CABECERA --- */
+.header-bar {
+    width: 100%;
+    background-color: #d1121d;
+    color: white;
+    padding: 15px 20px;
+    box-sizing: border-box;
+    z-index: 2000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.header-bar h1 { margin: 0; font-size: 1.5em; font-weight: 600; }
+
+.header-button {
+    background-color: white;
+    color: #d1121d;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+}
+.header-button:hover { background-color: #f0f0f0; }
+
+#map {
+    flex: 1;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Inputs Sidebar */
+.sidebar input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.sidebar button#sendButton {
+    padding: 8px 12px; background-color: #d1121d; color: white;
+    border: none; border-radius: 4px; cursor: pointer;
+}
+
+/* UI Panel (Leyenda) */
+.ui-panel {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 15px;
+    z-index: 1000;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 250px;
+    max-width: 90vw;
+    border: 1px solid #ddd;
+}
+
+/* Info Panel */
+.info { top: 80px; left: 10px; max-height: calc(100vh - 100px); overflow-y: auto; }
+.info h4 { margin: 0 0 10px 0; color: #d1121d; }
+#info-content { font-size: 0.9em; }
+#info-content ul { list-style-type: none; padding-left: 0; margin-top: 5px; margin-bottom: 0; }
+#info-content li { margin-bottom: 3px; }
+
+/* Sliders */
+.slider-item { margin-bottom: 8px; }
+.slider-item label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.95em; }
+.slider-item input[type="range"] { width: 100%; margin-right: 0px; height: 4px; background: #ddd; border-radius: 2px; }
+.slider-item .slider-value { font-weight: bold; color: #d1121d; vertical-align: middle; min-width: 40px; display: inline-block; }
+#updateWeightsButton {
+    width: 100%; padding: 10px; background-color: #005a9c; color: white;
+    border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 15px;
+}
+#updateWeightsButton:hover { background-color: #004170; }
+
+summary { cursor: pointer; outline: none; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: '+'; float: right; font-weight: bold; color: #d1121d; }
+details[open] summary::after { content: '-'; }
+
+/* Leyenda */
+.legend {
+    bottom: 30px;
+    right: 10px;
+    line-height: 1.4;
+    width: 150px;
+}
+.legend h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    color: #333;
+}
+.legend i {
+    width: 18px; height: 18px; display: inline-block;
+    vertical-align: middle; margin-right: 8px; opacity: 0.7; border: 1px solid #999;
+}
+
+/* Loader y Errores */
+#loader { display: none; margin-top: 15px; text-align: center; color: #555; font-size: 0.9em; }
+.spinner {
+    border: 4px solid #f3f3f3; border-top: 4px solid #d1121d; border-radius: 50%;
+    width: 20px; height: 20px; animation: spin 1s linear infinite;
+    display: inline-block; margin-right: 10px; vertical-align: middle;
+}
+#errorMessage { color: #d1121d; margin-top: 10px; display: none; font-size: 0.9em; word-wrap: break-word; }
+
+.mobile-only { display: none; }
+.close-btn {
+    background: none; border: none; font-size: 2rem; color: #333;
+    position: absolute; top: 10px; right: 15px; cursor: pointer; z-index: 1002;
+}
+
+.category-group {
+    background-color: #fff;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+}
+
+/* --- Estilos para Tooltips de Información --- */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: middle;
+    cursor: help;
+}
+
+.info-icon {
+    background-color: #e0e0e0;
+    color: #555;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: serif; /* Para que la 'i' se vea elegante */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    transition: background-color 0.2s;
+}
+
+.info-icon:hover {
+    background-color: #d1121d;
+    color: white;
+    border-color: #d1121d;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 9999; /* Muy alto para que flote sobre todo */
+    bottom: 125%; /* Que aparezca encima del icono */
+    left: 50%;
+    margin-left: -100px; /* Centrar respecto al icono */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.85em;
+    font-weight: normal;
+    line-height: 1.4;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    pointer-events: none; /* Para que no moleste al ratón */
+}
+
+/* Flechita pequeña abajo del tooltip */
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* --- MEDIA QUERIES (MÓVIL) --- */
+@media (max-width: 768px) {
+    .header-bar { padding: 10px; font-size: 0.9em; gap: 10px; }
+    .header-bar h1 { font-size: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: center; }
+    .header-button.mobile-only { display: block; padding: 6px 10px; }
+
+    /* Sidebar Izquierda Móvil (Overlay) */
+    .sidebar {
+        position: absolute; left: 0; top: 0; height: 100%; width: 85%; max-width: 320px;
+        transform: translateX(-100%); transition: transform 0.3s ease-in-out;
+        z-index: 3000; box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    }
+    .sidebar.active { transform: translateX(0); }
+
+    /* Sidebar Derecha Móvil (Overlay Full Height) */
+    .sidebar-right {
+        position: absolute;
+        right: 0; top: 0;
+        width: 85%; max-width: 280px;
+
+        /* En móvil ignoramos la restricción de altura de la leyenda y usamos 100% */
+        height: 100%;
+        max-height: none;
+
+        transform: translateX(100%); transition: transform 0.3s ease-in-out;
+        display: flex; /* Para que la animación funcione */
+        border-radius: 0; border-left: none;
+        z-index: 3001;
+    }
+    .sidebar-right.active { transform: translateX(0); }
+
+    .leaflet-top { top: 10px; }
+
+    /* Leyenda compacta móvil (arriba) */
+    .legend {
+        position: fixed !important; top: 60px !important; right: 10px !important;
+        bottom: auto !important; left: auto !important; margin: 0 !important;
+        width: 130px !important; max-height: 30vh !important; overflow-y: auto !important;
+        font-size: 11px !important; padding: 6px !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+        border-radius: 4px !important; z-index: 2500 !important;
+    }
+    .legend h4 { margin: 0 0 4px 0 !important; font-size: 12px !important; font-weight: bold; }
+    .legend i { width: 10px !important; height: 10px !important; margin-right: 4px !important; }
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
