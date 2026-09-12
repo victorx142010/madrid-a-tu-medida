@@ -2,3 +2,8 @@
 Thumbs.db
 .vercel
 node_modules/
+__pycache__/
+
+# Materia prima de NOMECALLES/IECM ya volcada en js/app.js y data/municipios.geojson.
+# Se quedan en disco para poder rehacer el dataset, pero no hace falta versionarlos.
+data/*.zip
