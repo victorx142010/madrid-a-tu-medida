@@ -762,7 +762,8 @@ function buildWeightedGeoJSON(pesos, tieneCoche) {
 
         geoJsonLayer = L.geoJSON(geoJsonData, {
             style: style,
-            onEachFeature: onEachFeature
+            onEachFeature: onEachFeature,
+            renderer: L.canvas()
         }).addTo(map);
         
         if (geoJsonLayer.getBounds().isValid()) map.fitBounds(geoJsonLayer.getBounds());
